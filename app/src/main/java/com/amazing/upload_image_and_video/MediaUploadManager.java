@@ -16,6 +16,9 @@ public class MediaUploadManager {
 
     public static final String MEDIA_STORE = "image_store";
 
+    private static final String IMAGE_DIR_NAME = "my_pictures";
+    private static final String VIDEO_DIR_NAME = "my_video";
+
     private Uri localUri;
     private Uri localVideoUri;
     private Context context;
@@ -71,7 +74,7 @@ public class MediaUploadManager {
                 return null;
             }
 
-            return writeImageBitMapToExternalStorage(mediaBitmap, "my_pictures",
+            return writeImageBitMapToExternalStorage(mediaBitmap, IMAGE_DIR_NAME,
                     curImageFile.getName() + "_edit");
         }
         return null;
@@ -91,7 +94,7 @@ public class MediaUploadManager {
             String curName = currentFile.getName();
 
             InputStream inputStream = context.getContentResolver().openInputStream(uri);
-            File outputDir = getPublicVideoStorageDir("my_videos");
+            File outputDir = getPublicVideoStorageDir(VIDEO_DIR_NAME);
             File file = new File(outputDir, curName + "_edit");
 
             FileOutputStream outputStream = new FileOutputStream(file);
