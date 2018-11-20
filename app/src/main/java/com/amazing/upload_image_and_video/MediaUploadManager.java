@@ -68,6 +68,7 @@ public class MediaUploadManager {
 
             if (mediaBitmap == null) {
                 Log.e(MEDIA_STORE, "bitmap is null");
+                return null;
             }
 
             return writeImageBitMapToExternalStorage(mediaBitmap, "my_pictures",

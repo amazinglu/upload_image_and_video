@@ -5,11 +5,13 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,19 +19,21 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.VideoView;
-
 import com.amazing.upload_image_and_video.util.PermissionUtil;
 
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 
 public class PickMediaFragment extends Fragment {
 
     private static final int REQ_CODE_PICK_MEDIA = 10;
+    private static final int REQ_CODE_PLAY_VIDEO = 11;
 
     private ImageView imageHolder;
     private Button pickMedia;
     private VideoView videoHolder;
+
+    private Uri videoLocalUri;
 
     private MediaUploadManager mediaUploadManager;
 
@@ -55,6 +59,25 @@ public class PickMediaFragment extends Fragment {
 
         mediaUploadManager = MediaUploadManager.getInstance(getContext());
 
+        videoHolder.setOnClickListener(view1 -> {
+            if (videoLocalUri != null) {
+                Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+                intent.setDataAndType(videoLocalUri, "video/*");
+                startActivityForResult(intent.createChooser(intent, "Select player"), REQ_CODE_PLAY_VIDEO);
+            }
+        });
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (videoLocalUri != null) {
+            videoHolder.setVideoURI(videoLocalUri);
+            videoHolder.requestFocus();
+            videoHolder.seekTo(1);
+//            videoHolder.start();
+        }
     }
 
     @Override
@@ -75,21 +98,12 @@ public class PickMediaFragment extends Fragment {
             Uri mediaUri = data.getData();
 
             if (mediaUri.toString().toLowerCase().contains("video")) {
-
-                try {
-                    loadVideo(mediaUri);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
+                loadVideo(mediaUri);
             } else {
-                try {
-                    loadImage(mediaUri);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                loadImage(mediaUri);
             }
+        }
+        if (requestCode == REQ_CODE_PLAY_VIDEO) {
         }
     }
 
@@ -99,19 +113,14 @@ public class PickMediaFragment extends Fragment {
         }
     }
 
-    private Uri loadVideo(Uri mediaUri) throws IOException {
-        Uri localVideoUri = mediaUploadManager.loadVideo(mediaUri);
-
-        videoHolder.setVideoURI(localVideoUri);
-        videoHolder.requestFocus();
-        videoHolder.seekTo(1);
-
-        return localVideoUri;
+    private void loadVideo(Uri mediaUri) {
+        LoadVideoTask loadVideoTask = new LoadVideoTask(mediaUri);
+        loadVideoTask.execute();
     }
 
-    private void loadImage(Uri mediaUri) throws IOException {
-        Uri localImageUri = mediaUploadManager.loadImage(mediaUri);
-        imageHolder.setImageURI(localImageUri);
+    private void loadImage(Uri mediaUri) {
+        LoadImageTask loadImageTask = new LoadImageTask(mediaUri);
+        loadImageTask.execute();
     }
 
     private void pickMediaFromResource() {
@@ -153,5 +162,65 @@ public class PickMediaFragment extends Fragment {
         }
 
         return !needReadExternalPermission && !needWriteExternalPermission;
+    }
+
+    /**
+     * load image and video async
+     * todo: add the progress bar to show the download progress
+     * */
+    class LoadImageTask extends AsyncTask<Void, Void, Uri> {
+
+        private Uri originUri;
+
+        public LoadImageTask(Uri originUri) {
+            this.originUri = originUri;
+        }
+
+        @Override
+        protected Uri doInBackground(Void... voids) {
+            try {
+                return mediaUploadManager.loadImage(originUri);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Uri uri) {
+            if (uri == null) {
+                return;
+            }
+            imageHolder.setImageURI(uri);
+        }
+    }
+
+    class LoadVideoTask extends AsyncTask<Void, Void, Uri> {
+
+        private Uri originUri;
+
+        public LoadVideoTask(Uri originUri) {
+            this.originUri = originUri;
+        }
+
+        @Override
+        protected Uri doInBackground(Void... voids) {
+            try {
+                return mediaUploadManager.loadVideo(originUri);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Uri uri) {
+            if (uri != null) {
+                videoHolder.setVideoURI(uri);
+                videoHolder.requestFocus();
+                videoHolder.seekTo(1);
+                videoLocalUri = uri;
+            }
+        }
     }
 }
