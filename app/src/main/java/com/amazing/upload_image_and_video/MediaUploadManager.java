@@ -1,16 +1,20 @@
 package com.amazing.upload_image_and_video;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
+import android.provider.OpenableColumns;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
-import android.widget.ImageView;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLConnection;
 
 public class MediaUploadManager {
 
@@ -41,6 +45,7 @@ public class MediaUploadManager {
      * @param uri the origin url of the image file
      * @return local url of the file
      * */
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public Uri loadImage(Uri uri) throws IOException {
         return getImageContextWithAuthority(uri);
 
@@ -48,8 +53,45 @@ public class MediaUploadManager {
 //        imageView.setImageBitmap(bitmap);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public Uri loadVideo(Uri uri) throws IOException {
         return getVideoContextWithAuthority(uri);
+    }
+
+    /**
+     * this function is work with the real file path
+     * */
+    public boolean isImageFile(Uri uri) {
+        return getFileMimeTypeFromUri(uri).toLowerCase().contains("image");
+    }
+
+    public boolean isVideoFile(Uri uri) {
+        return getFileMimeTypeFromUri(uri).toLowerCase().contains("video");
+    }
+
+    private String getFileMimeTypeFromUri(Uri uri) {
+        return context.getContentResolver().getType(uri);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private String getFileNameFromUri(Uri uri) {
+        Cursor returnCursor =
+                context.getContentResolver().query(uri,
+                        null, null, null, null);
+
+        int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+        returnCursor.moveToFirst();
+        return returnCursor.getString(nameIndex);
+    }
+
+    private Long getFileSizeFromUri(Uri uri) {
+        Cursor returnCursor =
+                context.getContentResolver().query(uri,
+                        null, null, null, null);
+
+        int sizeIndex = returnCursor.getColumnIndex(OpenableColumns.SIZE);
+        returnCursor.moveToFirst();
+        return returnCursor.getLong(sizeIndex);
     }
 
     /**

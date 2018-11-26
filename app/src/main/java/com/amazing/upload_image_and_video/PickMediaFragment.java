@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 import android.widget.VideoView;
 import com.amazing.upload_image_and_video.util.PermissionUtil;
 
@@ -97,7 +98,13 @@ public class PickMediaFragment extends Fragment {
         if (requestCode == REQ_CODE_PICK_MEDIA && resultCode == Activity.RESULT_OK) {
             Uri mediaUri = data.getData();
 
-            if (mediaUri.toString().toLowerCase().contains("video")) {
+            if (mediaUploadManager.isImageFile(mediaUri)) {
+                Toast.makeText(getContext(), "image file", Toast.LENGTH_SHORT).show();
+            } else if (mediaUploadManager.isVideoFile(mediaUri)) {
+                Toast.makeText(getContext(), "video file", Toast.LENGTH_SHORT).show();
+            }
+
+            if (mediaUploadManager.isVideoFile(mediaUri)) {
                 loadVideo(mediaUri);
             } else {
                 loadImage(mediaUri);
